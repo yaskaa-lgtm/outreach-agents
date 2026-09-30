@@ -13,9 +13,10 @@ dependencies = ["outreach-agents-backend"]
 
 [tool.uv]
 package = false
-# Pure-Python build of charset-normalizer (a dependency of trafilatura): its compiled
-# extensions are unsigned and blocked by Windows Smart App Control. Same code, a bit slower.
-no-binary-package = ["charset-normalizer"]
+# Pure-Python builds of packages whose compiled extensions are unsigned and blocked by
+# Windows Smart App Control (charset-normalizer, a dependency of trafilatura; mypy).
+# Same code, a bit slower. See docs/DECISIONS.md.
+no-binary-package = ["charset-normalizer", "mypy"]
 
 [tool.uv.workspace]
 members = ["backend"]

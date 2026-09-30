@@ -36,7 +36,7 @@ Bigger architectural choices get a full ADR in [`adr/`](adr/).
 | 2026-09-30 | Evidence check in code: a claim is kept only if its excerpt appears in a page really fetched during the run | Ask the LLM to self-check | Deterministic, testable, cannot be talked out of it by page content. |
 | 2026-09-30 | Refusal fallbacks (`fallbacks` beta) **not** enabled | Enable by default | A fallback may run on a pricier model, which the daily budget could not anticipate; refusals end the run with a clear `agent_failed` error instead. To revisit with real usage data. |
 | 2026-09-30 | Agents 1 and 2 run inside the HTTP request in Phase 1 | Job queue now | The PostgreSQL job queue is Phase 2; the fake LLM answers instantly, a real run takes up to a few minutes (the web app shows a pending state). |
-| 2026-09-30 | `charset-normalizer` installed from source (pure Python) via `[tool.uv] no-binary-package` | Keep the compiled wheel | Its compiled extensions are unsigned and blocked by Windows Smart App Control (decision 13 of PLAN.md); same code, slightly slower. |
+| 2026-09-30 | `charset-normalizer` and `mypy` installed from source (pure Python) via `[tool.uv] no-binary-package` | Keep the compiled wheels | Its compiled extensions are unsigned and blocked by Windows Smart App Control (decision 13 of PLAN.md); same code, slightly slower. |
 | 2026-09-30 | CSP with a per-request nonce for scripts; `style-src 'unsafe-inline'` kept | Nonce for styles too | UI components set inline `style` attributes, which nonces cannot cover; scripts (the XSS risk) stay nonce-only. |
 | 2026-09-30 | `eager_defaults` on every model | Refresh objects after commit | Values computed by PostgreSQL (timestamps) come back with `RETURNING`: no lazy load in async code. |
 
