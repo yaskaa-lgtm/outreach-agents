@@ -23,6 +23,32 @@ if sys.platform == "win32":
         return {"selector": asyncio.SelectorEventLoop}
 
 
+# Variables of the developer's shell that must not leak into tests (DATABASE_URL is kept:
+# CI uses it to point the integration tests at its PostgreSQL service).
+_ISOLATED_ENV_VARS = (
+    "DEMO_MODE",
+    "DRY_RUN",
+    "ADMIN_EMAIL",
+    "ADMIN_PASSWORD",
+    "ANTHROPIC_API_KEY",
+    "LLM_MODEL_REASONING",
+    "LLM_MODEL_FAST",
+    "LLM_EFFORT_REASONING",
+    "LLM_PRICE_REASONING_INPUT_USD_PER_MTOK",
+    "LLM_PRICE_REASONING_OUTPUT_USD_PER_MTOK",
+    "LLM_PRICE_FAST_INPUT_USD_PER_MTOK",
+    "LLM_PRICE_FAST_OUTPUT_USD_PER_MTOK",
+    "USD_TO_EUR_RATE",
+    "HUNTER_API_KEY",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolated_environment(monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in _ISOLATED_ENV_VARS:
+        monkeypatch.delenv(name, raising=False)
+
+
 @pytest.fixture
 def make_settings() -> Callable[..., Settings]:
     """Build Settings without reading `.env`; keyword arguments override fields."""

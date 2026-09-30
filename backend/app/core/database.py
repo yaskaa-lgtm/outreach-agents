@@ -6,7 +6,12 @@ import asyncio
 import logging
 
 from sqlalchemy import text
-from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -14,6 +19,11 @@ logger = logging.getLogger(__name__)
 def create_engine(database_url: str) -> AsyncEngine:
     """Create the async engine. `pool_pre_ping` drops dead connections transparently."""
     return create_async_engine(database_url, pool_pre_ping=True)
+
+
+def create_sessionmaker(engine: AsyncEngine) -> async_sessionmaker[AsyncSession]:
+    # expire_on_commit=False: objects stay readable after commit (no implicit reload).
+    return async_sessionmaker(engine, expire_on_commit=False)
 
 
 async def ping_database(engine: AsyncEngine, timeout_seconds: float = 2.0) -> bool:
