@@ -2,6 +2,41 @@
 
 What I learned at each phase, in my own words. One section per phase.
 
+## Phase 1 — Data model, LLM layer, offer analysis and segments (2026-09-30)
+
+**What was built**
+- A database schema managed by Alembic migrations, a single admin login with server-side
+  sessions, and an audit log of every important action.
+- An `LLMClient` interface with two implementations: the real Anthropic API and a fake,
+  deterministic LLM that replays recorded answers (tests and demo mode need no API key).
+- A safe web reader (SSRF protection, robots.txt, size/time limits) and two agents: one that
+  describes what the client sells with a source for every claim, one that proposes customer
+  segments with criteria checked against official French lists.
+- Cost tracking in euros with a daily budget, and two web screens using a typed API client
+  generated from the OpenAPI schema.
+
+**Concepts**
+- *Structured outputs* — instead of asking the model "please answer in JSON", the API is given
+  the exact JSON schema to follow, then Pydantic checks the answer (with one retry if not).
+  Like a form with fixed fields instead of a blank page.
+- *SSRF* — tricking a server into fetching an internal address (a database, a cloud metadata
+  service) on the attacker's behalf. Like asking the receptionist to fetch "the red folder in
+  the manager's office": the building must decide which rooms visitors may send someone to.
+- *Evidence check* — the model must quote the sentence it relied on, and code verifies that
+  the sentence really is on the page. Trust, but verify — with a program, not with the model.
+
+**Surprises and fixes**
+- Windows Smart App Control also blocks some compiled Python extensions (`charset_normalizer`):
+  the pure-Python version of that package is installed instead.
+- With async SQLAlchemy, values computed by PostgreSQL (timestamps) must be returned at write
+  time (`eager_defaults`), otherwise reading them later fails.
+
+**What I should be able to explain in an interview**
+- Why an orchestrated pipeline of narrow agents instead of one free agent (ADR 0001).
+- How hallucinations are limited: sourced claims, exact-excerpt check in code, schemas.
+- How prompt injection is limited: untrusted-content tags, no action tools, code-side checks.
+- How LLM costs are measured and capped.
+
 ## Phase 0 — Foundations & security (2026-09-30)
 
 **What was built**

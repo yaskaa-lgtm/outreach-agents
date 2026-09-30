@@ -47,10 +47,58 @@ Please do **not** open a public issue. Use GitHub's private vulnerability report
   allow-list). The web app sends baseline security headers (`X-Frame-Options`,
   `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy`).
 
+## Authentication (Phase 1)
+
+- One admin account, created at first start from `ADMIN_EMAIL` / `ADMIN_PASSWORD` (`.env`,
+  at least 12 characters). Passwords are hashed with argon2id; unknown emails spend the same
+  hashing time, so response time does not reveal which accounts exist.
+- Sessions are server-side: the cookie holds a random 256-bit token (`HttpOnly`, `Secure`,
+  `SameSite=Lax`), the database stores only its SHA-256 hash. Logout revokes it at once.
+- After 5 failed logins an address is locked for 15 minutes (a looser limit also applies per
+  client address). These counters live in memory (single-process MVP).
+- The demo account (`demo@example.com`, public password) only works while `DEMO_MODE=true`:
+  it is refused at login and its sessions are rejected as soon as demo mode is off.
+- The browser never calls the API directly: Next.js server components and server actions do,
+  forwarding the session cookie (backend-for-frontend).
+
+## Reading the web safely (Phase 1)
+
+Every page an agent reads goes through `SafeWebFetcher`
+([`backend/app/providers/web/fetcher.py`](../backend/app/providers/web/fetcher.py)):
+
+- **SSRF**: only `http(s)` on the default ports, no credentials in URLs, no local host names;
+  the host name must resolve only to public addresses, and the address actually connected to
+  is checked again (against DNS rebinding); every redirect (max 3) goes through the same checks;
+  no proxy from the environment.
+- **Limits**: 2 MB per page, 15 s per request, HTML or plain text only.
+- **Politeness**: robots.txt is respected (RFC 9309: 4xx = allowed, 5xx = everything refused),
+  one request per host per second, honest User-Agent pointing to this repository.
+- The offer analyst can only read pages of the client's own website.
+
+## Prompt injection (Phase 1, test suite extended in Phase 3)
+
+- Web pages and user descriptions reach the model inside `<untrusted_web_content>` /
+  `<untrusted_user_description>` tags; the tags are neutralised inside the content so a page
+  cannot "close" them. System prompts state that this content is data, never instructions.
+- Agents that read external content have no action tool (no sending, no deletion). Unknown
+  tool names are refused by the agent runtime.
+- Every claim about a company must quote an excerpt that is really present in a fetched page;
+  the check runs in code after the model answers, so page content cannot talk its way past it.
+
+## HTTP hardening (Phase 1)
+
+- API: security headers, `default-src 'none'` CSP on JSON responses, Origin check on
+  state-changing requests, per-client rate limit, `Cache-Control: no-store` on `/auth`.
+- Web: strict Content-Security-Policy with a per-request nonce for scripts
+  (`web/src/proxy.ts`), `X-Frame-Options: DENY`, no `X-Powered-By`.
+
+## Cost safety
+
+- Every LLM call is journaled (tokens, estimated cost in euros, duration, no content).
+- Daily budget per workspace: warning at 80 %, LLM work paused at 100 % until the next day or
+  a budget increase. Set a spend limit in the Anthropic Console as a second safety net.
+
 ## Planned (see [PLAN.md](PLAN.md))
 
-- SSRF protection for every web fetch (private/loopback/link-local IPs refused, redirects
-  re-checked, size and time limits) — Phase 1.
-- Prompt-injection defences: untrusted content tags, no action tools for agents reading
-  external content, trapped-page tests — Phases 1 and 3.
-- API rate limiting and a strict Content-Security-Policy — Phase 1.
+- Encryption at rest (Fernet) of SMTP/IMAP credentials and signed unsubscribe links — Phase 4.
+- Dedicated prompt-injection test suite with trapped pages and emails — Phases 3 and 5.

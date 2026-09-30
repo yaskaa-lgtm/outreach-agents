@@ -10,7 +10,7 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Foundations & security | Done — validated 2026-09-30 |
-| 1 | Data model, `LLMClient`, `fetch_page`, Agents 1–2, screens 1–2 | Not started |
+| 1 | Data model, `LLMClient`, `fetch_page`, Agents 1–2, screens 1–2 | Done — awaiting validation (PR from `phase-1`) |
 | 2 | Discovery: Agents 3–4, job queue + worker, screen 3 | Not started |
 | 3 | Personalisation & writing: Agents 5–7, prompt-injection tests, first evals | Not started |
 | 4 | Sending & compliance: approval queue, SMTP, footer, RFC 8058, suppression, caps, DNS check | Not started |
@@ -211,14 +211,27 @@ LLM models (verified 2026-09-30 on
 - [x] GitHub Actions CI: backend lint/type/test, web lint/type/build, pre-commit, gitleaks (full history), Docker build + smoke test — validated locally (actionlint + the same commands); first real run happens after the first push
 - [x] Minimal README, `LICENSE` (MIT), `docs/SECURITY.md`, `docs/DECISIONS.md`, `docs/LEARNING_LOG.md`, ADR 0001, `docs/GITHUB_SETUP.md`
 
-### Phase 1 — Data model, LLM layer, Agents 1–2
-- SQLAlchemy models + first Alembic migration for all tables in §2; `alembic upgrade head` on api start
-- `app/core/security.py`: Fernet helpers, HMAC tokens, password hashing
-- `LLMClient` protocol, `AnthropicClient`, `FakeLLM` (recorded responses), cost logging, daily budget guard
-- `fetch_page`: SSRF guard (resolve DNS, block private/loopback/link-local, re-check after each redirect), max 3 redirects, 2 MB cap, timeouts, robots.txt cache, honest User-Agent, per-host rate limit; `trafilatura` extraction (licence to verify)
-- Agent 1 (offer analyst) + Agent 2 (ICP strategist): prompts in `agents/prompts/`, schemas, tests with FakeLLM
-- Typed API client generated from OpenAPI; screens 1 (onboarding) and 2 (segments)
-- Security middleware: CORS allow-list, security headers, API rate limiting
+### Phase 1 — Data model, LLM layer, Agents 1–2 (done on branch `phase-1`, awaiting validation)
+- [x] SQLAlchemy models + first Alembic migration (the Phase 1 tables of §2: workspaces, users,
+      user sessions, offer profiles, segments, LLM calls, audit log; later phases add theirs);
+      one-shot `migrate` service in docker compose; tests that migrations go up/down and match the models
+- [x] Authentication (validated decision 2): single admin from `.env`, argon2, server-side sessions,
+      HttpOnly + Secure + SameSite=Lax cookie, login lockout, demo account refused outside demo mode
+- [x] `LLMClient` protocol, `AnthropicLLMClient` (structured outputs, strict tools, effort), `FakeLLM`
+      (recorded demo answers), `llm_calls` journal with cost in euros, daily budget
+      (80 % warning, 100 % pause, raise it from the UI) — validated decision 7
+- [x] `fetch_page`: SSRF guard (DNS check + connected-peer check against DNS rebinding, every
+      redirect re-checked), max 3 redirects, 2 MB cap, timeouts, HTML/text only, robots.txt
+      (RFC 9309), honest User-Agent, one request per host per second; `trafilatura` extraction
+- [x] Agent 1 (offer analyst, tools restricted to the client's site) + Agent 2 (ICP strategist,
+      criteria validated against official NAF/headcount/département lists); versioned prompts;
+      untrusted-content tags; evidence check in code removes claims not found in the fetched pages
+- [x] Typed API client generated from OpenAPI (CI fails if it is stale); screens 1 (onboarding:
+      analyse, review, edit, validate) and 2 (segments: score, rationale, criteria, selection)
+- [x] Security: security headers, strict CSP with nonces (web), Origin check, API rate limiting,
+      JSON errors with stable codes, licence check of every dependency (automated test)
+- Deferred to Phase 2 (with the job queue): running agents in the worker instead of the HTTP request
+- Deferred to Phase 4 (with sending accounts): Fernet encryption helpers and HMAC unsubscribe tokens
 
 ### Phase 2 — Discovery: Agents 3–4
 - `CompanyProvider` interface: `RechercheEntreprisesProvider`, `CsvImportProvider`, `FakeProvider`

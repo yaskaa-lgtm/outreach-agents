@@ -5,5 +5,7 @@
 !uv.lock
 !backend/pyproject.toml
 !backend/app/
+!backend/alembic.ini
+!backend/migrations/
 **/__pycache__
 **/*.pyc

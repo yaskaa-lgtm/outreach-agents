@@ -29,6 +29,10 @@ COPY backend/app backend/app
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-editable --package outreach-agents-backend
 
+# Database migrations (run by the one-shot `migrate` service of docker compose).
+COPY backend/alembic.ini backend/alembic.ini
+COPY backend/migrations backend/migrations
+
 # Never run as root inside the container.
 RUN useradd --create-home --uid 10001 appuser
 USER appuser

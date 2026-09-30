@@ -29,6 +29,16 @@ Bigger architectural choices get a full ADR in [`adr/`](adr/).
 | 2026-09-30 | One branch + one pull request per phase from Phase 1; merge only with green CI, by the developer | Commit to `main` | Reviewable history, CI as a gate. |
 | 2026-09-30 | The French brief is kept as `docs/PROJECT_BRIEF.fr.md` | Translate it | It is the developer's original specification. |
 | 2026-09-30 | `npm run typecheck` runs `next typegen` before `tsc` | Commit generated types | `LayoutProps` and route types are generated into `.next/` (git-ignored). The first CI run failed because they were missing on a fresh checkout. |
+| 2026-09-30 | **Phase 1** — Each phase adds its own tables through new Alembic migrations; the target schema stays in `docs/PLAN.md` §2 | Create every table in Phase 1 | No unused tables; each table arrives with the code and tests that use it. |
+| 2026-09-30 | Server-side sessions (random token in an HttpOnly cookie, SHA-256 hash in `user_sessions`) | Signed stateless cookies (JWT) | Logout and revocation are immediate; a database leak does not leak usable sessions. |
+| 2026-09-30 | Backend-for-frontend: the browser only talks to Next.js; server components and server actions call the API with the session cookie | Browser → API with CORS | No API exposure to the browser, no CORS in the normal flow, Next.js server actions add their own Origin check. |
+| 2026-09-30 | Structured outputs (`output_config.format`, JSON schema from the Pydantic model via `anthropic.transform_schema`) + Pydantic validation + one retry with the errors | Tool-forcing (`tool_choice`) | Forced `tool_choice` returns 400 on Claude Sonnet 5.5; structured outputs work together with regular tools. |
+| 2026-09-30 | Evidence check in code: a claim is kept only if its excerpt appears in a page really fetched during the run | Ask the LLM to self-check | Deterministic, testable, cannot be talked out of it by page content. |
+| 2026-09-30 | Refusal fallbacks (`fallbacks` beta) **not** enabled | Enable by default | A fallback may run on a pricier model, which the daily budget could not anticipate; refusals end the run with a clear `agent_failed` error instead. To revisit with real usage data. |
+| 2026-09-30 | Agents 1 and 2 run inside the HTTP request in Phase 1 | Job queue now | The PostgreSQL job queue is Phase 2; the fake LLM answers instantly, a real run takes up to a few minutes (the web app shows a pending state). |
+| 2026-09-30 | `charset-normalizer` installed from source (pure Python) via `[tool.uv] no-binary-package` | Keep the compiled wheel | Its compiled extensions are unsigned and blocked by Windows Smart App Control (decision 13 of PLAN.md); same code, slightly slower. |
+| 2026-09-30 | CSP with a per-request nonce for scripts; `style-src 'unsafe-inline'` kept | Nonce for styles too | UI components set inline `style` attributes, which nonces cannot cover; scripts (the XSS risk) stay nonce-only. |
+| 2026-09-30 | `eager_defaults` on every model | Refresh objects after commit | Values computed by PostgreSQL (timestamps) come back with `RETURNING`: no lazy load in async code. |
 
 ## Dependencies and licences
 
@@ -47,6 +57,15 @@ when used unmodified as a library, and is listed with a note.
 | sqlalchemy | 2.1.1 | MIT | |
 | psycopg / psycopg-binary | 3.3.6 | **LGPL-3.0-only** | Weak copyleft: imported unmodified as a library, which the LGPL allows from MIT or proprietary code; the licence notice must ship with any distributed image. Apache-2.0 alternative if ever needed: `asyncpg` (plus Alembic's async template). |
 | httpx | 0.28.1 | BSD-3-Clause | |
+| alembic | 1.20.0 | MIT | Phase 1 |
+| anthropic | 1.9.0 | MIT | Phase 1; brings `httpx2` (BSD-3-Clause) |
+| trafilatura | 2.2.0 | Apache-2.0 | Phase 1; brings `tld` (MPL-1.1 OR GPL-2.0 OR LGPL-2.1: used under MPL-1.1) and `certifi` (MPL-2.0, unmodified CA bundle) |
+| charset-normalizer | 3.5.2 | MIT | Phase 1 (dependency of trafilatura), pure-Python build |
+| lxml | 6.1.3 | BSD-3-Clause | Phase 1 |
+| pwdlib[argon2] / argon2-cffi | 0.3.1 / 25.1.0 | MIT / MIT | Phase 1 |
+
+An automated test (`backend/tests/security/test_dependency_licenses.py`) fails if any installed
+Python package has a GPL, AGPL, LGPL or MPL licence that is not reviewed in this section.
 
 ### Backend (Python) — development only
 
@@ -57,6 +76,8 @@ when used unmodified as a library, and is listed with a note.
 | pytest-cov | 7.1.0 | MIT |
 | ruff | 0.16.9 | MIT |
 | mypy | 2.3.1 | MIT |
+| respx | 0.23.1 | BSD-3-Clause |
+| faker | 40.40.0 | MIT |
 | pre-commit | 4.6.2 | MIT |
 | httpx2 | 2.13.1 | BSD-3-Clause |
 
@@ -68,6 +89,9 @@ when used unmodified as a library, and is listed with a note.
 | react / react-dom | 19.2.8 | MIT |
 | @base-ui/react | 1.8.0 | MIT |
 | class-variance-authority | 0.7.1 | Apache-2.0 |
+| openapi-fetch | 0.17.0 | MIT (Phase 1) |
+| server-only | 0.0.1 | MIT (Phase 1) |
+| openapi-typescript (dev) | 7.13.0 | MIT (Phase 1) |
 | cn | 0.4.0 | MIT |
 | lucide-react | 1.49.0 | ISC |
 | shadcn | 4.21.0 | MIT |

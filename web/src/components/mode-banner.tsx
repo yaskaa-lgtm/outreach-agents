@@ -1,4 +1,4 @@
-import type { RunMode } from "@/lib/api";
+import type { RunMode } from "@/lib/api/client";
 
 const MODES: Record<RunMode, { label: string; detail: string; className: string }> = {
   DEMO: {

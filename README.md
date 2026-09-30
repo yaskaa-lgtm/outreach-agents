@@ -3,20 +3,29 @@
 AI agents that research B2B prospects and draft **sourced, compliant** cold emails — with a
 human approving every email before it leaves.
 
-> **Status: work in progress — Phase 0 (foundations & security) done.**
-> No prospecting feature exists yet. This README only describes what works today; the full
+> **Status: work in progress — Phases 0 (foundations) and 1 (offer analysis and segments) done.**
+> Nothing is prospected or sent yet. This README only describes what works today; the full
 > roadmap is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What works today
 
-- `docker compose up` starts the whole stack: PostgreSQL, a FastAPI API, a background worker
-  (idle for now), a Next.js web app and Mailpit (a local SMTP server that captures emails).
-- The web app shows a permanent banner with the active mode (`DEMO` / `DRY RUN` / `LIVE`) and
-  the health of the API and database.
-- Safe defaults: `DEMO_MODE=true`, `DRY_RUN=true`, every port bound to `127.0.0.1`.
-- Secret protection: `.gitignore` written before the first commit, a gitleaks pre-commit hook
-  (with an automated test proving a fake secret is blocked) and a full-history gitleaks scan
-  in CI.
+- **Screen 1 — "What do you sell?"**: an agent reads the client's own website (a few pages,
+  robots.txt respected) and writes an offer profile. Every claim carries the exact sentence
+  and the page it comes from; claims whose sentence is not really on the page are removed in
+  code before anyone sees them. The user reviews, edits and validates the profile.
+- **Screen 2 — "Who needs it?"**: a second agent proposes 3 to 6 customer segments with
+  search criteria checked against official French lists (NAF codes, headcount ranges,
+  départements), the decision makers to contact, a fit score and its justification.
+- **Cost control**: every LLM call is journaled with its cost in euros; a daily budget
+  warns at 80 % and pauses LLM work at 100 %.
+- **Security**: login with a single admin account, SSRF-safe web reading, prompt-injection
+  defences (web content is data, never instructions), strict Content-Security-Policy,
+  rate limiting, secret scanning before every commit and on the whole Git history in CI.
+- **Demo mode (default)**: no API key needed. A deterministic fake LLM analyses a fictional
+  company (`nimbus-ledger.example.com`). Log in with `demo@example.com` / `demo-password`
+  (fake, public credentials that only work in demo mode).
+- `docker compose up` starts everything: PostgreSQL (migrated automatically), the FastAPI
+  API, a worker (idle until Phase 2), the Next.js web app and Mailpit.
 
 ## Quick start
 
@@ -46,6 +55,7 @@ Commands are identical on Windows (PowerShell) and macOS (Terminal).
 uv sync                                   # Python environment (.venv) for backend + evals
 uv run python -m pre_commit install       # Git hooks: gitleaks, ruff, hygiene checks
 docker compose up -d db mailpit           # only the database and Mailpit
+uv run python -m alembic -c backend/alembic.ini upgrade head               # database schema
 
 uv run python -m uvicorn app.main:app --reload --reload-dir backend/app   # API on :8000
 uv run python -m app.worker                                               # worker
@@ -68,9 +78,14 @@ cd web && npm run lint && npm run typecheck && npm run format:check && npm run b
 
 ## Tech stack
 
-Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2 · psycopg 3 · PostgreSQL 18 · uv ·
-Next.js 16 (App Router) · TypeScript · Tailwind CSS · shadcn/ui · Docker Compose ·
-GitHub Actions · gitleaks · pre-commit.
+Python 3.12 · FastAPI · Pydantic v2 · SQLAlchemy 2 + Alembic · psycopg 3 · PostgreSQL 18 ·
+Anthropic API (structured outputs, tool use) · trafilatura · uv · Next.js 16 (App Router,
+server actions) · TypeScript · Tailwind CSS · shadcn/ui · OpenAPI-generated client ·
+Docker Compose · GitHub Actions · gitleaks · pre-commit.
+
+To use the real LLM: set `DEMO_MODE=false`, `ANTHROPIC_API_KEY`, `ADMIN_EMAIL` and
+`ADMIN_PASSWORD` in `.env` (see `.env.example`), keep `DRY_RUN=true`, and set a spend limit in
+the Anthropic Console as well.
 
 ## Documentation
 

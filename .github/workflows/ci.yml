@@ -53,6 +53,10 @@ jobs:
         run: uv run python -m ruff format --check .
       - name: mypy
         run: uv run python -m mypy
+      - name: OpenAPI schema is up to date (source of the typed web client)
+        run: |
+          uv run python -m app.openapi_export web/src/lib/api/openapi.json
+          git diff --exit-code web/src/lib/api/openapi.json
       - name: Cache pre-commit environments (used by the secret-scanning test)
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
@@ -75,6 +79,10 @@ jobs:
           cache: npm
           cache-dependency-path: web/package-lock.json
       - run: npm ci
+      - name: TypeScript API types are up to date
+        run: |
+          npm run api:types
+          git diff --exit-code src/lib/api/schema.d.ts
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run format:check
@@ -118,11 +126,16 @@ jobs:
         run: docker compose build
       - name: Start the stack (no .env file, like a first-time visitor)
         run: docker compose up -d --wait --wait-timeout 180
-      - name: Smoke test
+      - name: Smoke test (demo mode, end to end through the API)
         run: |
           curl --fail --silent http://127.0.0.1:8000/health | tee /dev/stderr | grep -q '"database":"ok"'
-          curl --fail --silent http://127.0.0.1:3000 | grep -q "System status"
+          curl --fail --silent http://127.0.0.1:3000/login | grep -q "Sign in to outreach-agents"
           curl --fail --silent --output /dev/null http://127.0.0.1:8025
+          curl --fail --silent --cookie-jar jar.txt -H 'content-type: application/json' \
+            -d '{"email":"demo@example.com","password":"demo-password"}' http://127.0.0.1:8000/auth/login
+          curl --fail --silent --cookie jar.txt -H 'content-type: application/json' \
+            -d '{"website_url":"https://nimbus-ledger.example.com/"}' \
+            http://127.0.0.1:8000/offer-profiles/analyze | grep -q '"company_name":"Nimbus Ledger"'
       - name: Logs on failure
         if: failure()
         run: docker compose logs

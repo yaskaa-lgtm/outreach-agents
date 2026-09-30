@@ -3,7 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import { connection } from "next/server";
 
 import { ModeBanner } from "@/components/mode-banner";
-import { getHealth } from "@/lib/api";
+import { getHealth } from "@/lib/api/health";
 
 import "./globals.css";
 

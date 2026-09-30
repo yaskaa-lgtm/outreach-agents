@@ -41,7 +41,10 @@ Full brief (French): `docs/PROJECT_BRIEF.fr.md`. Plan and progress: `docs/PLAN.m
 - Format: `uv run python -m ruff format .` · Types: `uv run python -m mypy`
 - All hooks: `uv run python -m pre_commit run --all-files`
 - Web: `cd web` then `npm run dev | lint | typecheck | format | build`
-- Migrations (from Phase 1): `uv run python -m alembic upgrade head`
+- Migrations: `uv run python -m alembic -c backend/alembic.ini upgrade head`
+  (new one: `... revision --autogenerate -m "..."`, then review it by hand)
+- API types for the web: `uv run python -m app.openapi_export web/src/lib/api/openapi.json`
+  then `cd web && npm run api:types` (CI fails when they are stale)
 - Always prefer `python -m <tool>`: Windows Smart App Control blocks `.venv\Scripts\*.exe`.
 
 ## Conventions

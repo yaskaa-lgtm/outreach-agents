@@ -27,6 +27,8 @@ x-backend: &backend
       condition: service_healthy
     mailpit:
       condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
   restart: unless-stopped
 
 services:
@@ -55,6 +57,23 @@ services:
       - "127.0.0.1:8025:8025" # web UI
       - "127.0.0.1:1025:1025" # SMTP
     restart: unless-stopped
+
+  migrate:
+    # One-shot: brings the database schema up to date, then exits.
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: outreach-agents-backend:local
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-outreach}:${POSTGRES_PASSWORD:-outreach_dev_password}@db:5432/${POSTGRES_DB:-outreach}
+    command: ["alembic", "-c", "backend/alembic.ini", "upgrade", "head"]
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: "no"
 
   api:
     <<: *backend
@@ -85,6 +104,8 @@ services:
       API_INTERNAL_URL: http://api:8000
       API_PUBLIC_URL: http://localhost:8000
       MAILPIT_UI_URL: http://localhost:8025
+      SESSION_COOKIE_NAME: ${SESSION_COOKIE_NAME:-oa_session}
+      SESSION_COOKIE_SECURE: ${SESSION_COOKIE_SECURE:-true}
     ports:
       - "127.0.0.1:3000:3000"
     depends_on:
