@@ -1,0 +1,9 @@
+# Build context of the backend image = repository root.
+# Allow-list: only what the image needs. `.env` and local data can never leak into it.
+*
+!pyproject.toml
+!uv.lock
+!backend/pyproject.toml
+!backend/app/
+**/__pycache__
+**/*.pyc

@@ -1,0 +1,104 @@
+# Git hooks that run before every commit.
+# Install once per clone:   uv run pre-commit install
+# Run on all files:         uv run pre-commit run --all-files
+#
+# Every hook is declared locally and runs either as `python -m <module>` or in Docker.
+# Why: Windows "Smart App Control" blocks the unsigned .exe launchers that pre-commit
+# normally generates for hooks, while python.exe and Docker are trusted. Behaviour is
+# identical on macOS. See docs/DECISIONS.md (2026-09-30).
+minimum_pre_commit_version: "4.0.0"
+
+repos:
+  - repo: local
+    hooks:
+      # --- 1. Secrets -----------------------------------------------------------------
+      # Official gitleaks image, pinned. Docker must be running to commit.
+      - id: gitleaks
+        name: Detect hardcoded secrets (gitleaks)
+        language: docker_image
+        entry: ghcr.io/gitleaks/gitleaks:v8.30.1 git --pre-commit --redact --staged --verbose
+        pass_filenames: false
+
+      # Defence in depth: never commit an environment file, even with `git add -f`.
+      - id: forbid-env-files
+        name: Forbid .env files (only .env.example is allowed)
+        language: fail
+        entry: "Environment files must never be committed. Keep secrets in .env (git-ignored)."
+        files: '(^|/)\.env($|\.(?!example$))'
+
+      - id: detect-private-key
+        name: Detect private keys
+        language: python
+        additional_dependencies: &hooks ["pre-commit-hooks==6.0.0"]
+        entry: python -m pre_commit_hooks.detect_private_key
+        types: [text]
+
+      # --- 2. Repository hygiene -------------------------------------------------------
+      - id: check-added-large-files
+        name: Check for added large files
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.check_added_large_files --maxkb=500
+
+      - id: check-merge-conflict
+        name: Check for merge conflict markers
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.check_merge_conflict
+        types: [text]
+
+      - id: check-case-conflict
+        name: Check for case conflicts (Windows/macOS)
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.check_case_conflict
+
+      - id: check-yaml
+        name: Check YAML syntax
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.check_yaml
+        types: [yaml]
+
+      - id: check-toml
+        name: Check TOML syntax
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.check_toml
+        types: [toml]
+
+      - id: end-of-file-fixer
+        name: Fix end of files
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.end_of_file_fixer
+        types: [text]
+
+      - id: trailing-whitespace
+        name: Trim trailing whitespace
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.trailing_whitespace_fixer --markdown-linebreak-ext=md
+        types: [text]
+
+      - id: mixed-line-ending
+        name: Normalize line endings to LF
+        language: python
+        additional_dependencies: *hooks
+        entry: python -m pre_commit_hooks.mixed_line_ending --fix=lf
+        types: [text]
+
+      # --- 3. Python lint + format (keep the version in sync with uv.lock) --------------
+      - id: ruff-check
+        name: Ruff lint
+        language: python
+        additional_dependencies: &ruff ["ruff==0.16.9"]
+        entry: python -m ruff check --force-exclude --fix
+        types_or: [python, pyi]
+
+      - id: ruff-format
+        name: Ruff format
+        language: python
+        additional_dependencies: *ruff
+        entry: python -m ruff format --force-exclude
+        types_or: [python, pyi]

@@ -1,0 +1,9 @@
+# Allow-list: only what `next build` needs.
+*
+!package.json
+!package-lock.json
+!next.config.ts
+!tsconfig.json
+!postcss.config.mjs
+!public/
+!src/

@@ -1,0 +1,96 @@
+# One command starts everything (Windows and macOS):   docker compose up
+#
+#   Web app          http://localhost:3000
+#   API (OpenAPI)    http://localhost:8000/docs
+#   Mailpit inbox    http://localhost:8025
+#
+# Works without any `.env` file: defaults are DEMO_MODE=true and DRY_RUN=true.
+# Every port is bound to 127.0.0.1, so nothing is exposed to your local network.
+
+name: outreach-agents
+
+x-backend: &backend
+  build:
+    context: .
+    dockerfile: backend/Dockerfile
+  image: outreach-agents-backend:local
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    # Inside the compose network, services reach each other by service name.
+    DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-outreach}:${POSTGRES_PASSWORD:-outreach_dev_password}@db:5432/${POSTGRES_DB:-outreach}
+    MAILPIT_SMTP_HOST: mailpit
+    MAILPIT_SMTP_PORT: "1025"
+  depends_on:
+    db:
+      condition: service_healthy
+    mailpit:
+      condition: service_healthy
+  restart: unless-stopped
+
+services:
+  db:
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-outreach}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-outreach_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-outreach}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      # PostgreSQL 18+ images expect the volume on /var/lib/postgresql.
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  mailpit:
+    # Local SMTP server that captures every email (nothing is delivered).
+    image: axllent/mailpit:v1.31.3
+    ports:
+      - "127.0.0.1:8025:8025" # web UI
+      - "127.0.0.1:1025:1025" # SMTP
+    restart: unless-stopped
+
+  api:
+    <<: *backend
+    ports:
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=3)",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+
+  worker:
+    <<: *backend
+    command: ["python", "-m", "app.worker"]
+
+  web:
+    build:
+      context: ./web
+    image: outreach-agents-web:local
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      API_PUBLIC_URL: http://localhost:8000
+      MAILPIT_UI_URL: http://localhost:8025
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  pgdata:

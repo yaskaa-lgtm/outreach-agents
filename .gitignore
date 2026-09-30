@@ -1,0 +1,76 @@
+# =============================================================================
+# SECURITY FIRST — this repository is public.
+# Secrets and personal data must never be committed. See docs/SECURITY.md.
+# =============================================================================
+
+# --- Environment files & secrets ---------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+*.crt
+secrets/
+credentials*.json
+
+# --- Local data (may contain personal data of prospects) ---------------------
+data/
+exports/
+*.csv
+!**/tests/fixtures/**/*.csv
+*.sqlite
+*.sqlite3
+*.db
+*.dump
+*.sql.gz
+
+# --- Logs ---------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Python -------------------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+
+# --- Node / Next.js -----------------------------------------------------------
+node_modules/
+.next/
+out/
+*.tsbuildinfo
+next-env.d.ts
+.vercel/
+playwright-report/
+test-results/
+blob-report/
+
+# --- Evals (reports are committed, raw runs are not) --------------------------
+evals/runs/
+
+# --- OS & editors -------------------------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+*.swp
+*~
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
