@@ -265,6 +265,50 @@ Working rule from Phase 1 on: **one branch per phase + pull request**, CI green 
 
 ---
 
+## 7. Research notes for the next phases (checked 2026-09-30, no code written yet)
+
+**Anthropic SDK** — [PyPI `anthropic`](https://pypi.org/project/anthropic/) 1.9.0, MIT.
+- Version 1.x is built on **`httpx2`**, not `httpx` (dependency `httpx2>=2,<3`). Our own
+  outbound HTTP can stay on `httpx` as the brief says, but `respx` only mocks `httpx`
+  ([PyPI `respx`](https://pypi.org/project/respx/) depends on `httpx`), so LLM calls are
+  tested through `FakeLLM`, never by mocking HTTP. See Q12.
+- Structured outputs: `client.messages.parse(..., output_format=<PydanticModel>)` returns a
+  validated `parsed_output`; raw form is `output_config={"format": {"type": "json_schema", ...}}`
+  (the old top-level `output_format` on `messages.create()` is deprecated).
+  Tools can use `strict: True` for schema-valid inputs.
+- `tool_choice` `{"type": "any"}` / `{"type": "tool"}` returns **400 on Claude Sonnet 5.5**:
+  use `auto` + prompt instructions, or structured outputs when only JSON is needed.
+- Thinking: Sonnet 5.5 runs adaptive thinking by default (`{"type": "disabled"}` is a 400);
+  depth is set with `output_config={"effort": ...}`. Haiku 4.5 does not support `effort`.
+- Token usage for cost logging: `response.usage.input_tokens`, `output_tokens`,
+  `cache_creation_input_tokens`, `cache_read_input_tokens`.
+- The SDK retries connection errors, 408, 409, 429 and 5xx with exponential backoff
+  (`max_retries`, default 2); typed errors (`RateLimitError`, `APIStatusError`, …).
+- Always check `stop_reason` (`refusal`, `max_tokens`) before reading the content.
+
+**Other libraries** (latest versions on PyPI, licences checked):
+
+| Library | Version | Licence | Use | Note |
+|---|---|---|---|---|
+| `trafilatura` | 2.2.0 | Apache-2.0 | page → clean text | OK (brief's "licence to verify" resolved). |
+| `alembic` | 1.20.0 | MIT | migrations | |
+| `cryptography` | 50.0.1 | Apache-2.0 / BSD | Fernet | |
+| `aiosmtplib` | 5.1.3 | MIT | SMTP | |
+| `aioimaplib` | 2.0.1 | **GPL-3.0** | IMAP | **Licence conflict** with an MIT project meant to be sold as SaaS → proposal: stdlib `imaplib` in `asyncio.to_thread` (see Q11). |
+| `dnspython` | 2.8.0 | ISC | SPF/DKIM/DMARC | |
+| `Faker` | 40.40.0 | MIT | fake data | |
+| `respx` | 0.23.1 | BSD-3 | mock `httpx` | |
+
+**Hunter** — Free plan: **50 credits per month** ([pricing](https://hunter.io/pricing)).
+Rate limits: Domain Search / Email Finder 15 req/s and 500 req/min, Email Verifier 10 req/s
+and 300 req/min; account endpoint `/v2/account` for remaining credits
+([docs](https://hunter.io/api-documentation/v2)). The credit guard and cache are mandatory.
+
+**Compliance sources** reachable (HTTP 200): both CNIL pages from the brief and
+[RFC 8058](https://www.rfc-editor.org/rfc/rfc8058).
+
+---
+
 ## Open questions
 
 Answered with a **default assumption** so work could continue; change any of them and I adapt.
@@ -290,3 +334,11 @@ Answered with a **default assumption** so work could continue; change any of the
 9. **Branch workflow**: one branch + PR per phase from Phase 1? — *Assumed: yes.*
 10. **Docs language**: English for every file in the repo except `README.fr.md`, French only in
     chat? — *Assumed: yes.*
+11. **IMAP library**: `aioimaplib` is GPL-3.0. Use the standard library `imaplib` in a worker
+    thread instead? — *Assumed: yes (decided in Phase 5).*
+12. **HTTP client**: keep `httpx` + `respx` for our own calls (brief), or align on `httpx2`
+    (used inside the Anthropic SDK and preferred by Starlette's test client)? —
+    *Assumed: keep `httpx` + `respx`; revisit only if it causes friction.*
+13. **Windows Smart App Control** is enabled on your Windows PC and blocks unsigned `.exe`
+    launchers (see `docs/DECISIONS.md`). Everything was adapted to work with it on; do you
+    want to keep it that way? — *Assumed: yes, keep it on (it is a security feature).*
