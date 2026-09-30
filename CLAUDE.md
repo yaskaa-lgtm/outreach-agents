@@ -1,7 +1,7 @@
 # CLAUDE.md — permanent rules for this repository
 
 Project: `outreach-agents`, autonomous B2B prospecting agents (France only, B2B only).
-Full brief: `docs/PROJECT_BRIEF.md`. Plan and progress: `docs/PLAN.md`.
+Full brief (French): `docs/PROJECT_BRIEF.fr.md`. Plan and progress: `docs/PLAN.md`.
 
 ## Absolute rules (they override everything else)
 1. **No secret or personal data in Git.** No key, password, token, real email, real name or
@@ -60,5 +60,8 @@ Full brief: `docs/PROJECT_BRIEF.md`. Plan and progress: `docs/PLAN.md`.
 - One phase at a time; at the end: tests + CI green, clean commit, docs updated, then
   **stop and wait for validation**.
 - Ask before: adding a heavy dependency, changing the stack, deleting files, `git push`, or
-  any irreversible action. Never `git push --force`, never commit `.env`, never commit on
+  any irreversible action. Check the licence of every new dependency (no GPL/AGPL) and list
+  it in `docs/DECISIONS.md`.
+- Windows Smart App Control stays ON: if a tool is blocked, never suggest disabling it; name
+  the tool and propose a signed/official alternative (winget, official installer) or Docker. Never `git push --force`, never commit `.env`, never commit on
   `main` with failing tests.

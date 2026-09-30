@@ -1,16 +1,15 @@
 # Implementation plan — `outreach-agents`
 
-> Status: **draft v1 (2026-09-30), awaiting validation.** Phase 0 was executed on the
-> default assumptions listed in [Open questions](#open-questions) because the developer
-> asked for autonomous work overnight. Every Phase 0 choice is reversible.
+> Status: **v2 (2026-09-30), validated by the developer.** Answers to the open questions are
+> recorded in [Validated decisions](#validated-decisions-2026-09-30).
 >
-> Source of truth for requirements: [`docs/PROJECT_BRIEF.md`](PROJECT_BRIEF.md).
+> Source of truth for requirements: [`docs/PROJECT_BRIEF.fr.md`](PROJECT_BRIEF.fr.md) (French).
 
 ## Progress
 
 | Phase | Scope | Status |
 |---|---|---|
-| 0 | Foundations & security | Done — awaiting validation |
+| 0 | Foundations & security | Done — validated 2026-09-30 |
 | 1 | Data model, `LLMClient`, `fetch_page`, Agents 1–2, screens 1–2 | Not started |
 | 2 | Discovery: Agents 3–4, job queue + worker, screen 3 | Not started |
 | 3 | Personalisation & writing: Agents 5–7, prompt-injection tests, first evals | Not started |
@@ -188,19 +187,19 @@ LLM models (verified 2026-09-30 on
 | R1 | Secret or personal data leaks into the public repo | `.gitignore` first, gitleaks pre-commit + CI (full history), Faker-only fixtures on `example.com`/`.test`, noreply commit email, review of `git diff --staged` before every commit. |
 | R2 | LLM hallucinates facts about prospects | Facts must quote an exact excerpt from a stored page; emails cite fact IDs; QA agent checks every claim; hallucination-rate eval. |
 | R3 | Prompt injection from websites or inbound emails | Untrusted-content tags, no action tools for reading agents, trapped-page tests. |
-| R4 | Model retirement: Claude Haiku 4.5 retires "not sooner than October 15, 2026" | Model names in `.env`; if retired, switch `LLM_MODEL_FAST` without code change. |
+| R4 | Model lifecycle: `claude-haiku-4-5-20251001` is **Active**, tentative retirement "not sooner than October 15, 2026", with at least 60 days' notice before any retirement ([model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations), checked 2026-09-30) | Model names in `.env` only; switching `LLM_MODEL_FAST` needs no code change. |
 | R5 | Hunter free quota exhausted | `provider_calls` cache, credit counter checked before each call, FakeContactProvider in demo. |
 | R6 | Deliverability (new domain, spam complaints) | Secondary sending domain, DNS checker, low daily caps with progressive ramp-up, bounce circuit breaker, no tracking pixel. |
 | R7 | Legal misunderstanding (not a lawyer) | `docs/COMPLIANCE.md` with official CNIL links and a "not legal advice" notice; France only. |
 | R8 | Windows/macOS drift | LF endings, no bash/Makefile, `uv`/`npm`/`docker compose` only, CI on Linux + documented commands for both OSes. |
 | R9 | Scope is large for one beginner developer | Strict phase gates, small verifiable steps, demo mode first-class. |
-| R10 | LLM cost overrun | Daily budget in euros checked before every call (see Q7 for the USD→EUR rate). |
+| R10 | LLM cost overrun | Daily budget in euros checked before every call: warning at 80 %, LLM work paused at 100 % (see decision 7). Second safety net: a spend limit in the Anthropic Console. |
 
 ---
 
 ## 6. Task breakdown by phase
 
-### Phase 0 — Foundations & security (awaiting validation)
+### Phase 0 — Foundations & security (validated 2026-09-30)
 - [x] `git init`, repo-local noreply email, `.gitignore` before the first commit, `.gitattributes`, `.editorconfig`
 - [x] `.env.example` with fake values only
 - [x] pre-commit (gitleaks, forbid `.env`, private keys, large files, merge conflicts, case conflicts, YAML/TOML, end-of-file, trailing whitespace, LF endings, ruff lint + format)
@@ -309,36 +308,43 @@ and 300 req/min; account endpoint `/v2/account` for remaining credits
 
 ---
 
-## Open questions
+## Validated decisions (2026-09-30)
 
-Answered with a **default assumption** so work could continue; change any of them and I adapt.
+Answers given by the developer to the Phase 0 questions. They are binding for later phases.
 
-1. **Project name**: `outreach-agents`? — *Assumed: yes.*
-2. **Authentication in the MVP**: single admin account (email + password from `.env`, HTTP-only
-   session cookie) or no auth at all (localhost only)? — *Assumed: single admin account
-   (Phase 1).*
-3. **GitHub**: public repo `outreach-agents` under your account `yaskaa-lgtm`, commits signed
-   with the GitHub noreply address (`…@users.noreply.github.com`) instead of your real email? —
-   *Assumed: yes (already configured locally in this repo only).*
-4. **`LICENSE` copyright holder**: your GitHub handle `yaskaa-lgtm` (no real name)? —
-   *Assumed: yes.*
-5. **npm vs pnpm** for the web app? — *Assumed: npm.*
-6. **Fast model**: Claude Haiku 4.5 may retire from mid-October 2026. Keep it as the default
-   `LLM_MODEL_FAST`, or use Sonnet 5.5 for everything? — *Assumed: keep Haiku 4.5 via `.env`,
-   revisit in Phase 1.*
-7. **Costs in euros**: Anthropic prices are in USD. OK to use a configurable
-   `USD_TO_EUR_RATE` in `.env` that you set yourself? Default daily LLM budget? —
-   *Assumed: yes; budget 2 € / day.*
-8. **Sending domain**: do you already own a secondary domain for real tests (Phase 4)? —
-   *Not needed before Phase 4.*
-9. **Branch workflow**: one branch + PR per phase from Phase 1? — *Assumed: yes.*
-10. **Docs language**: English for every file in the repo except `README.fr.md`, French only in
-    chat? — *Assumed: yes.*
-11. **IMAP library**: `aioimaplib` is GPL-3.0. Use the standard library `imaplib` in a worker
-    thread instead? — *Assumed: yes (decided in Phase 5).*
-12. **HTTP client**: keep `httpx` + `respx` for our own calls (brief), or align on `httpx2`
-    (used inside the Anthropic SDK and preferred by Starlette's test client)? —
-    *Assumed: keep `httpx` + `respx`; revisit only if it causes friction.*
-13. **Windows Smart App Control** is enabled on your Windows PC and blocks unsigned `.exe`
-    launchers (see `docs/DECISIONS.md`). Everything was adapted to work with it on; do you
-    want to keep it that way? — *Assumed: yes, keep it on (it is a security feature).*
+1. **Name**: `outreach-agents`.
+2. **Authentication**: a single admin account.
+   - Created at first start from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (never committed).
+   - Password hashed with argon2; session in an `HttpOnly` + `Secure` + `SameSite=Lax` cookie;
+     login attempts are rate-limited.
+   - In `DEMO_MODE`, a demo account with fake credentials documented in the README.
+   - The data model stays multi-tenant (`workspace_id`) so more users can be added later.
+3. **GitHub**: public repository under `yaskaa-lgtm`; commits use the GitHub noreply address
+   (repo-level `git config`). GitHub settings "Keep my email addresses private" and "Block
+   command line pushes that expose my email" to be enabled (see `docs/GITHUB_SETUP.md`).
+4. **Licence**: MIT, "Copyright (c) 2026 yaskaa-lgtm", no real name.
+5. **Web package manager**: npm.
+6. **Fast model**: Claude Haiku 4.5 stays the default `LLM_MODEL_FAST`, changeable in `.env`.
+   Official status (checked 2026-09-30): **Active**, tentative retirement "not sooner than
+   October 15, 2026" ([model deprecations](https://platform.claude.com/docs/en/about-claude/model-deprecations)).
+   Code never depends on a specific model: everything goes through configuration.
+7. **Costs**: configurable `USD_TO_EUR_RATE` in `.env` (with its update date in a comment);
+   daily LLM budget **2 €**.
+   - At **80 %** of the budget: warning in the UI.
+   - At **100 %**: LLM work is **paused** (not failed) until the next day or until the budget
+     is raised manually.
+   - Second safety net: a spend limit set by the developer in the Anthropic Console.
+8. **Sending domain**: none before Phase 4; until then DRY_RUN + Mailpit only. At the start of
+   Phase 4: guide to buy a secondary domain and configure SPF/DKIM/DMARC. Never prospect from
+   a primary domain.
+9. **Workflow**: Phase 0 on `main`; from Phase 1, **one branch + one pull request per phase**.
+   Merge only when CI is green. PR description: what, why, how to test. The developer merges.
+10. **Language**: English everywhere in the repository except `README.fr.md` and the brief,
+    renamed `docs/PROJECT_BRIEF.fr.md`. Explanations in chat: French.
+11. **IMAP**: standard-library `imaplib` called through `asyncio.to_thread` in the worker,
+    behind a testable `InboxReader` interface (no GPL dependency). The licence of every new
+    dependency is checked and listed in `docs/DECISIONS.md`.
+12. **HTTP client**: `httpx` + `respx`.
+13. **Windows Smart App Control stays on.** If a tool is blocked, never suggest disabling it:
+    name the blocked tool and propose a signed/official alternative (winget, official
+    installer) or running it in Docker.

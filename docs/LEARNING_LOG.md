@@ -29,6 +29,10 @@ What I learned at each phase, in my own words. One section per phase.
 - On Windows, `localhost` tries IPv6 first; Docker only listens on IPv4, so the database
   looked "down". Fix: use `127.0.0.1` in local defaults.
 - psycopg's async mode needs a specific event loop on Windows (`SelectorEventLoop`).
+- The first GitHub CI run failed although everything passed locally: `LayoutProps` is a type
+  that Next.js generates into `.next/`, which existed on my machine but not on a fresh
+  checkout. Fix: `next typegen` before `tsc`. Lesson: "works on my machine" is exactly what
+  CI is for — and checks should be run from a clean clone before pushing.
 
 **What I should be able to explain in an interview**
 - Why secrets are blocked at three levels (local hook, CI scan of the full history, GitHub

@@ -49,14 +49,30 @@ Then open the **Actions** tab: the `CI` workflow must turn green.
 Push protection makes GitHub refuse a `git push` that contains a known secret format:
 a second safety net after the local gitleaks hook.
 
-## 5. Recommended extras
+## 5. Keep your email address private
+
+GitHub documentation:
+[blocking command line pushes that expose your personal email address](https://docs.github.com/en/account-and-profile/setting-up-and-managing-your-personal-account-on-github/managing-email-preferences/blocking-command-line-pushes-that-expose-your-personal-email-address).
+
+1. Click your profile picture (top right) → **Settings**.
+2. In the **Access** section of the sidebar, click **Emails**.
+3. Tick **Keep my email addresses private**.
+4. Tick **Block command line pushes that expose my email**.
+
+From then on, GitHub refuses any push containing a commit authored with your private
+address. This repository's commits already use the noreply address (step 7).
+
+## 6. Recommended extras
 
 - **Private vulnerability reporting**: same **Advanced Security** page → enable
   *Private vulnerability reporting* (referenced by [SECURITY.md](SECURITY.md)).
 - **Protect `main`**: **Settings → Branches → Add branch ruleset** → target `main`, require
   a pull request and the `CI` status checks before merging, block force pushes.
+- **Anthropic spend limit** (not GitHub, but same idea: a second safety net): in the
+  [Claude Console](https://platform.claude.com/), set a monthly spend limit for the API key
+  used by this project, on top of the app's own daily budget.
 
-## 6. Second machine (macOS or Windows)
+## 7. Second machine (macOS or Windows)
 
 ```bash
 git clone https://github.com/yaskaa-lgtm/outreach-agents.git
