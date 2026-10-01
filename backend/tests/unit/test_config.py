@@ -46,6 +46,11 @@ def test_secrets_are_hidden_in_repr(make_settings: Callable[..., Settings]) -> N
     assert settings.anthropic_api_key.get_secret_value() == fake_secret
 
 
+def test_empty_hunter_key_means_no_hunter(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("HUNTER_API_KEY", "")
+    assert Settings(_env_file=None).hunter_api_key is None
+
+
 def test_model_names_are_not_hard_coded(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("LLM_MODEL_REASONING", raising=False)
     monkeypatch.delenv("LLM_MODEL_FAST", raising=False)

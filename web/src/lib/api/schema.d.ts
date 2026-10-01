@@ -73,6 +73,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/campaigns": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Campaigns */
+        get: operations["list_campaigns_campaigns_get"];
+        put?: never;
+        /**
+         * Create Campaign
+         * @description Creates the campaign and queues company discovery for each segment (worker).
+         */
+        post: operations["create_campaign_campaigns_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/campaigns/{campaign_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Campaign */
+        get: operations["get_campaign_campaigns__campaign_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/campaigns/{campaign_id}/import": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Import Csv */
+        post: operations["import_csv_campaigns__campaign_id__import_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/campaigns/{campaign_id}/prospects": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Prospects */
+        get: operations["list_prospects_campaigns__campaign_id__prospects_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -182,6 +254,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/prospects/{prospect_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Prospect */
+        get: operations["get_prospect_prospects__prospect_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/segments/{segment_id}": {
         parameters: {
             query?: never;
@@ -234,6 +323,105 @@ export interface components {
             /** Daily Limit Eur */
             daily_limit_eur: number;
         };
+        /** CampaignCreate */
+        CampaignCreate: {
+            /** Companies Per Segment */
+            companies_per_segment?: number | null;
+            /** Name */
+            name: string;
+            /** Segment Ids */
+            segment_ids: string[];
+        };
+        /** CampaignRead */
+        CampaignRead: {
+            /** Companies Per Segment */
+            companies_per_segment: number;
+            /** Counts */
+            counts: {
+                [key: string]: number;
+            };
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            jobs: components["schemas"]["JobProgress"];
+            /** Name */
+            name: string;
+            /** Segment Ids */
+            segment_ids: string[];
+        };
+        /** CompanySummary */
+        CompanySummary: {
+            /** City */
+            city: string | null;
+            /** Departement */
+            departement: string | null;
+            /** Domain Evidence Url */
+            domain_evidence_url: string | null;
+            /** Domain Status */
+            domain_status: string;
+            /** Headcount Range */
+            headcount_range: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Sole Trader */
+            is_sole_trader: boolean;
+            /** Naf Code */
+            naf_code: string | null;
+            /** Name */
+            name: string;
+            /** Siren */
+            siren: string | null;
+            /** Source Provider */
+            source_provider: string;
+            /** Website Domain */
+            website_domain: string | null;
+        };
+        /** ContactSummary */
+        ContactSummary: {
+            /** Email */
+            email: string | null;
+            /** First Name */
+            first_name: string | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Generic */
+            is_generic: boolean;
+            /** Last Name */
+            last_name: string | null;
+            /** Source Provider */
+            source_provider: string;
+            /** Title */
+            title: string | null;
+            /** Verification Status */
+            verification_status: string;
+        };
+        /** CsvImportRequest */
+        CsvImportRequest: {
+            /** Csv */
+            csv: string;
+        };
+        /** CsvImportResult */
+        CsvImportResult: {
+            /** Already In Campaign */
+            already_in_campaign: number;
+            /** Errors */
+            errors: string[];
+            /** Imported */
+            imported: number;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -254,6 +442,13 @@ export interface components {
             status: "ok" | "degraded";
             /** Version */
             version: string;
+        };
+        /** JobProgress */
+        JobProgress: {
+            /** Failed */
+            failed: number;
+            /** Pending */
+            pending: number;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -344,6 +539,45 @@ export interface components {
         /** OfferProfileUpdate */
         OfferProfileUpdate: {
             data: components["schemas"]["OfferProfileData"];
+        };
+        /** ProspectDetail */
+        ProspectDetail: {
+            /**
+             * Campaign Id
+             * Format: uuid
+             */
+            campaign_id: string;
+            company: components["schemas"]["CompanySummary"];
+            contact: components["schemas"]["ContactSummary"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Segment Id */
+            segment_id: string | null;
+            /** State */
+            state: string;
+            /** State Reason */
+            state_reason: string | null;
+            /** Transitions */
+            transitions: components["schemas"]["TransitionRead"][];
+        };
+        /** ProspectRow */
+        ProspectRow: {
+            company: components["schemas"]["CompanySummary"];
+            contact: components["schemas"]["ContactSummary"] | null;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Segment Id */
+            segment_id: string | null;
+            /** State */
+            state: string;
+            /** State Reason */
+            state_reason: string | null;
         };
         /**
          * RunMode
@@ -437,6 +671,22 @@ export interface components {
              * @description URL of a page you fetched that supports the claim, or 'user-input:description' if it comes from the user's description.
              */
             source_url: string;
+        };
+        /** TransitionRead */
+        TransitionRead: {
+            /** Actor */
+            actor: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** From State */
+            from_state: string | null;
+            /** Reason */
+            reason: string | null;
+            /** To State */
+            to_state: string;
         };
         /** UserRead */
         UserRead: {
@@ -580,6 +830,159 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BudgetStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_campaigns_campaigns_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRead"][];
+                };
+            };
+        };
+    };
+    create_campaign_campaigns_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CampaignCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_campaign_campaigns__campaign_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CampaignRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    import_csv_campaigns__campaign_id__import_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CsvImportRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CsvImportResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_prospects_campaigns__campaign_id__prospects_get: {
+        parameters: {
+            query?: {
+                state?: string | null;
+                segment_id?: string | null;
+            };
+            header?: never;
+            path: {
+                campaign_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectRow"][];
                 };
             };
             /** @description Validation Error */
@@ -781,6 +1184,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OfferProfileRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_prospect_prospects__prospect_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                prospect_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProspectDetail"];
                 };
             };
             /** @description Validation Error */

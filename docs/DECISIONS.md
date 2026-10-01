@@ -42,6 +42,19 @@ Bigger architectural choices get a full ADR in [`adr/`](adr/).
 | 2026-10-01 | Confirmed by the developer: keep `psycopg` (LGPL, used unmodified as a library) | Switch to `asyncpg` (Apache-2.0) | Allowed by the LGPL, already documented and tested; no migration cost. |
 | 2026-10-01 | Confirmed by the developer: refusal fallbacks stay disabled | Enable the `fallbacks` beta | Predictable costs within the daily budget; a refusal is a clear error. |
 | 2026-10-01 | Confirmed by the developer: web interface in English; agent-written texts in French | French or bilingual UI | Consistent with the repository and its audience; the prospects' language is handled by the agents. |
+| 2026-10-01 | **Phase 2** — Agents 3 (company discovery) and 4 (contact discovery and verification) are deterministic code, with no LLM call | LLM agents choosing companies and contacts | Every step is a rule (registry filters, SIREN check, ranking, verification statuses): code is cheaper, reproducible and testable; no budget is spent on discovery. |
+| 2026-10-01 | A candidate domain is `confirmed` only when the company's SIREN appears on its home page or a legal notice page (separators and spaces tolerated, not inside a longer number) | Trust the domain from the source | A wrong domain means writing to the wrong company; the proof URL is stored and shown. |
+| 2026-10-01 | Contact ranking: an address first, then the targeted titles, then named people, then generic addresses | Title match first | A registry officer without an address cannot be emailed; a reachable generic address is better than nobody (generic addresses are flagged). Found while testing the demo. |
+| 2026-10-01 | An address is checked against the confirmed domain before any verifier call; only `valid` becomes `email_verified` | Trust the provider's status | An address on another domain (or an unconfirmed one) stays unverified, so a CSV cannot inject sendable addresses. |
+| 2026-10-01 | Hunter credits counted as one per call returning data, cached 30 days in `provider_calls`, stopped at `HUNTER_MONTHLY_CREDIT_LIMIT` | No accounting | The [Hunter API docs](https://hunter.io/api-documentation/v2) do not state the exact cost per endpoint (`TODO(verify)`); over-counting is the safe side. |
+| 2026-10-01 | An empty `HUNTER_API_KEY` means "no Hunter" | Placeholder value in `.env.example` | Copying `.env.example` must not make the app call Hunter with a fake key. |
+| 2026-10-01 | The registry keeps only officers' first names, last name and role | Store the full API answer | Data minimisation (GDPR): birth year, nationality and corporate officers are dropped at the source. |
+| 2026-10-01 | CSV import sent as text in a JSON body (≤ 1 MB, 500 rows), parsed in Python | Multipart upload to the API | The browser never talks to the API (BFF): the Next.js server action reads the file and forwards it; one validation path, no extra dependency. |
+| 2026-10-01 | Job queue in PostgreSQL: idempotency key per job, `FOR UPDATE SKIP LOCKED`, exponential backoff with jitter, `dead` after `max_attempts`, LLM budget pause = `postpone` (attempt not counted), running jobs older than 15 min requeued at start | Redis / Celery / arq | No new service; the brief asks for PostgreSQL. |
+| 2026-10-01 | Fictional company sites in demo mode: `<slug>-<siren>.example.com` with a legal notice page that shows the SIREN (except when the SIREN ends in 3) | Skip the check in demo mode | The demo runs the real confirmation code and shows both outcomes. |
+| 2026-10-01 | Demo and tests use the reserved domain `webmail.example` (listed in the webmail blocklist) for personal addresses; a test fails if a tracked file contains an email address outside reserved domains | Generated addresses on real webmail domains | A generated personal address on a real webmail domain may belong to a real person; the brief forbids real addresses in the repository. |
+| 2026-10-01 | `faker` becomes a runtime dependency of the backend | Keep it for tests only | Demo mode generates its fictional companies and contacts at runtime. |
+| 2026-10-01 | The backend Docker image installs the app with `uv sync --no-cache` | Keep the uv cache mount for this step | uv rebuilds a local package only when its `pyproject.toml` changes ([uv cache docs](https://docs.astral.sh/uv/concepts/cache/)): images shipped stale code after a change in `backend/app`. Third-party dependencies keep their cached layer. |
 
 ## Dependencies and licences
 
@@ -65,6 +78,7 @@ when used unmodified as a library, and is listed with a note.
 | trafilatura | 2.2.0 | Apache-2.0 | Phase 1; brings `tld` (MPL-1.1 OR GPL-2.0 OR LGPL-2.1: used under MPL-1.1) and `certifi` (MPL-2.0, unmodified CA bundle) |
 | charset-normalizer | 3.5.2 | MIT | Phase 1 (dependency of trafilatura), pure-Python build |
 | lxml | 6.1.3 | BSD-3-Clause | Phase 1 |
+| faker | 40.40.0 | MIT | Phase 2 (demo mode data; was test-only); brings `tzdata` (Apache-2.0) |
 | pwdlib[argon2] / argon2-cffi | 0.3.1 / 25.1.0 | MIT / MIT | Phase 1 |
 
 An automated test (`backend/tests/security/test_dependency_licenses.py`) fails if any installed
@@ -80,7 +94,6 @@ Python package has a GPL, AGPL, LGPL or MPL licence that is not reviewed in this
 | ruff | 0.16.9 | MIT |
 | mypy | 2.3.1 | MIT |
 | respx | 0.23.1 | BSD-3-Clause |
-| faker | 40.40.0 | MIT |
 | pre-commit | 4.6.2 | MIT |
 | httpx2 | 2.13.1 | BSD-3-Clause |
 

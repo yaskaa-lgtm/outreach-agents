@@ -14,6 +14,7 @@ import uuid
 from collections.abc import AsyncIterator, Callable, Iterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
@@ -24,11 +25,13 @@ from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
 from sqlalchemy.engine import URL, make_url
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.auth.bootstrap import DEMO_EMAIL, DEMO_PASSWORD
 from app.core.config import Settings
+from app.core.database import create_engine, create_sessionmaker
 from app.main import create_app
-from app.models import Base
+from app.models import Base, Workspace
 from app.providers.llm.base import LLMClient
 
 ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
@@ -72,6 +75,22 @@ def clean_database(database_url: str) -> Iterator[str]:
     tables = ", ".join(table.name for table in reversed(Base.metadata.sorted_tables))
     with psycopg.connect(_libpq(make_url(database_url)), autocommit=True) as connection:
         connection.execute(f"TRUNCATE {tables} CASCADE")
+
+
+@pytest.fixture
+async def sessionmaker(clean_database: str) -> AsyncIterator[async_sessionmaker[AsyncSession]]:
+    engine = create_engine(clean_database)
+    yield create_sessionmaker(engine)
+    await engine.dispose()
+
+
+@pytest.fixture
+async def workspace_id(sessionmaker: async_sessionmaker[AsyncSession]) -> uuid.UUID:
+    async with sessionmaker() as db:
+        workspace = Workspace(name="Test", daily_llm_budget_eur=Decimal(2))
+        db.add(workspace)
+        await db.commit()
+        return workspace.id
 
 
 @pytest.fixture

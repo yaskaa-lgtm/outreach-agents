@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 const LINKS = [
   { href: "/onboarding", label: "1. Offer" },
   { href: "/segments", label: "2. Segments" },
+  { href: "/campaigns", label: "3. Campaigns" },
 ];
 
 export function AppHeader({ email }: { email: string }) {

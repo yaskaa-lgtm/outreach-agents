@@ -81,6 +81,63 @@ export async function setSegmentSelected(
   return { ok: true };
 }
 
+export async function launchCampaign(
+  _previous: ActionState,
+  formData: FormData,
+): Promise<ActionState> {
+  const name = String(formData.get("name") ?? "").trim();
+  const segmentIds = formData.getAll("segment_id").map(String);
+  if (!name) {
+    return { error: "Give the campaign a name." };
+  }
+  const client = await api();
+  const { data, error } = await client.POST("/campaigns", {
+    body: { name, segment_ids: segmentIds },
+  });
+  if (error) {
+    return { error: errorMessage(error, "The campaign could not be launched.") };
+  }
+  redirect(`/campaigns/${data.id}`);
+}
+
+// Server actions accept 1 MB bodies by default; keep room for the multipart overhead.
+const MAX_CSV_BYTES = 900_000;
+
+export type CsvImportState = ActionState & {
+  imported?: number;
+  duplicates?: number;
+  rowErrors?: string[];
+};
+
+export async function importCompaniesCsv(
+  campaignId: string,
+  _previous: CsvImportState,
+  formData: FormData,
+): Promise<CsvImportState> {
+  const file = formData.get("file");
+  if (!(file instanceof File) || file.size === 0) {
+    return { error: "Choose a CSV file." };
+  }
+  if (file.size > MAX_CSV_BYTES) {
+    return { error: "The file is too large (900 KB at most)." };
+  }
+  const client = await api();
+  const { data, error } = await client.POST("/campaigns/{campaign_id}/import", {
+    params: { path: { campaign_id: campaignId } },
+    body: { csv: await file.text() },
+  });
+  if (error) {
+    return { error: errorMessage(error, "The file could not be imported.") };
+  }
+  revalidatePath(`/campaigns/${campaignId}`);
+  return {
+    ok: true,
+    imported: data.imported,
+    duplicates: data.already_in_campaign,
+    rowErrors: data.errors,
+  };
+}
+
 export async function updateBudget(
   _previous: ActionState,
   formData: FormData,

@@ -22,12 +22,13 @@ RUN --mount=type=cache,target=/root/.cache/uv \
     --mount=type=bind,source=backend/pyproject.toml,target=backend/pyproject.toml \
     uv sync --frozen --no-dev --no-install-workspace --package outreach-agents-backend
 
-# 2. The application itself.
+# 2. The application itself. No cache here: uv rebuilds a local package only when its
+# pyproject.toml changes (https://docs.astral.sh/uv/concepts/cache/), so a cached wheel
+# would ship stale code after a change to backend/app.
 COPY pyproject.toml uv.lock ./
 COPY backend/pyproject.toml backend/pyproject.toml
 COPY backend/app backend/app
-RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-editable --package outreach-agents-backend
+RUN uv sync --frozen --no-dev --no-editable --no-cache --package outreach-agents-backend
 
 # Database migrations (run by the one-shot `migrate` service of docker compose).
 COPY backend/alembic.ini backend/alembic.ini

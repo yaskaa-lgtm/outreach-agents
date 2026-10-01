@@ -80,6 +80,43 @@ def test_no_environment_file_is_tracked() -> None:
     assert offenders == []
 
 
+EMAIL = r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}"
+# Reserved domains (RFC 2606 / RFC 6761) can never be a real mailbox; the GitHub noreply
+# address is the commit identity chosen on purpose (docs/GITHUB_SETUP.md).
+ALLOWED_EMAIL = re.compile(
+    r"@(([a-z0-9-]+\.)*(example\.(com|org|net)|example|test|invalid)"
+    r"|users\.noreply\.github\.com)$",
+    re.IGNORECASE,
+)
+
+
+def test_no_real_email_address_is_committed() -> None:
+    result = subprocess.run(
+        # --untracked: also check new files before they are added.
+        [  # type: ignore[list-item]
+            GIT,
+            "grep",
+            "-I",
+            "-o",
+            "-h",
+            "-E",
+            "--untracked",
+            EMAIL,
+            "--",
+            ".",
+            ":!uv.lock",
+            ":!web/package-lock.json",
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode in (0, 1), result.stderr  # 1 = no match, 2 = git error
+    offenders = sorted({e for e in result.stdout.split() if not ALLOWED_EMAIL.search(e)})
+    assert offenders == [], "use example.com / example.org / .test addresses only"
+
+
 def _env_example() -> dict[str, str]:
     values: dict[str, str] = {}
     for line in (REPO_ROOT / ".env.example").read_text(encoding="utf-8").splitlines():

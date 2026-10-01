@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { api } from "@/lib/api/client";
 
+import { LaunchForm } from "./launch-form";
 import { SegmentCard } from "./segment-card";
 
 export default async function SegmentsPage() {
@@ -14,6 +15,8 @@ export default async function SegmentsPage() {
         })
       ).data ?? [])
     : [];
+  const selectedIds = segments.filter((segment) => segment.selected).map((segment) => segment.id);
+  const today = new Date().toLocaleDateString("fr-FR", { timeZone: "Europe/Paris" });
 
   return (
     <>
@@ -34,11 +37,20 @@ export default async function SegmentsPage() {
           , then ask for segments.
         </p>
       ) : (
-        <div className="grid gap-6">
-          {segments.map((segment) => (
-            <SegmentCard key={segment.id} segment={segment} />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-6">
+            {segments.map((segment) => (
+              <SegmentCard key={segment.id} segment={segment} />
+            ))}
+          </div>
+          {selectedIds.length > 0 ? (
+            <LaunchForm segmentIds={selectedIds} defaultName={`Campaign ${today}`} />
+          ) : (
+            <p className="text-muted-foreground text-sm">
+              Select at least one segment to look for companies.
+            </p>
+          )}
+        </>
       )}
     </>
   );

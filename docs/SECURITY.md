@@ -30,11 +30,12 @@ Please do **not** open a public issue. Use GitHub's private vulnerability report
 ## Personal data
 
 - Test and demo data are generated with Faker on reserved domains (`example.com`,
-  `example.org`, `.test`). No real person ever appears in the repository.
+  `example.org`, `.test`, `webmail.example`). No real person ever appears in the repository;
+  a test fails if a tracked file contains an email address outside reserved domains.
 - Git commits use the GitHub `noreply` address, not a personal email address.
 - Logs mask email addresses (`jane.doe@example.com` → `j***@example.com`) and never contain
   full email bodies.
-- From Phase 1: SMTP/IMAP credentials stored in the database are encrypted at rest with
+- From Phase 4: SMTP/IMAP credentials stored in the database are encrypted at rest with
   Fernet (`FERNET_KEY` in `.env`).
 
 ## Local development defaults
@@ -91,6 +92,22 @@ Every page an agent reads goes through `SafeWebFetcher`
   state-changing requests, per-client rate limit, `Cache-Control: no-store` on `/auth`.
 - Web: strict Content-Security-Policy with a per-request nonce for scripts
   (`web/src/proxy.ts`), `X-Frame-Options: DENY`, no `X-Powered-By`.
+
+## Prospect data (Phase 2)
+
+- **B2B only, minimal data**: companies come from the official French registry
+  (recherche-entreprises.api.gouv.fr), a CSV the user provides, or Hunter. From the registry
+  only the officers' first names, last name and role are kept (no birth year, no nationality).
+- **No webmail, ever**: personal mailbox domains (`webmail_domains.txt`) are excluded in code,
+  whatever the source; disposable and invalid addresses are excluded too.
+- **Sendable means proven**: an address can reach `email_verified` only if the company's
+  website is confirmed by its SIREN (proof URL stored), the address is on that domain, and
+  the verification status is `valid`. Imported CSV addresses follow the same path.
+- Email addresses are also stored as a SHA-256 hash (normalised), used for deduplication and,
+  from Phase 4, for the suppression list (which must keep working after erasure).
+- Hunter: the key is sent only in the `X-API-KEY` header (never in a URL or a log), answers
+  are cached 30 days, and calls stop at the monthly credit limit.
+- Every prospect state change is recorded with its reason and actor (`prospect_transitions`).
 
 ## Cost safety
 
