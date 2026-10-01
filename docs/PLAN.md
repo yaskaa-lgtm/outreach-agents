@@ -10,8 +10,8 @@
 | Phase | Scope | Status |
 |---|---|---|
 | 0 | Foundations & security | Done — validated 2026-09-30 |
-| 1 | Data model, `LLMClient`, `fetch_page`, Agents 1–2, screens 1–2 | Done — awaiting validation (PR from `phase-1`) |
-| 2 | Discovery: Agents 3–4, job queue + worker, screen 3 | Not started |
+| 1 | Data model, `LLMClient`, `fetch_page`, Agents 1–2, screens 1–2 | Done — merged 2026-10-01 (PR #1) |
+| 2 | Discovery: Agents 3–4, job queue + worker, screen 3 | Done — awaiting validation (PR from `phase-2`) |
 | 3 | Personalisation & writing: Agents 5–7, prompt-injection tests, first evals | Not started |
 | 4 | Sending & compliance: approval queue, SMTP, footer, RFC 8058, suppression, caps, DNS check | Not started |
 | 5 | Replies: IMAP, threading, Agent 8, screen 5 | Not started |
@@ -211,7 +211,7 @@ LLM models (verified 2026-09-30 on
 - [x] GitHub Actions CI: backend lint/type/test, web lint/type/build, pre-commit, gitleaks (full history), Docker build + smoke test — validated locally (actionlint + the same commands); first real run happens after the first push
 - [x] Minimal README, `LICENSE` (MIT), `docs/SECURITY.md`, `docs/DECISIONS.md`, `docs/LEARNING_LOG.md`, ADR 0001, `docs/GITHUB_SETUP.md`
 
-### Phase 1 — Data model, LLM layer, Agents 1–2 (done on branch `phase-1`, awaiting validation)
+### Phase 1 — Data model, LLM layer, Agents 1–2 (merged 2026-10-01)
 - [x] SQLAlchemy models + first Alembic migration (the Phase 1 tables of §2: workspaces, users,
       user sessions, offer profiles, segments, LLM calls, audit log; later phases add theirs);
       one-shot `migrate` service in docker compose; tests that migrations go up/down and match the models
@@ -233,13 +233,31 @@ LLM models (verified 2026-09-30 on
 - Deferred to Phase 2 (with the job queue): running agents in the worker instead of the HTTP request
 - Deferred to Phase 4 (with sending accounts): Fernet encryption helpers and HMAC unsubscribe tokens
 
-### Phase 2 — Discovery: Agents 3–4
-- `CompanyProvider` interface: `RechercheEntreprisesProvider`, `CsvImportProvider`, `FakeProvider`
-- Domain discovery + SIREN confirmation on legal notice page (challenge 1)
-- `ContactProvider`: `HunterProvider` (cache, credit guard, 429/backoff), dirigeants from the gouv API, `FakeContactProvider`
-- Webmail blocklist, generic-address flag, verification statuses, dedup by SIREN/domain
-- PostgreSQL job queue + worker loop (idempotent, retries with exponential backoff, dead-letter)
-- Screen 3 (campaign: prospect list, filters, detail)
+### Phase 2 — Discovery: Agents 3–4 (done on branch `phase-2`, awaiting validation)
+- [x] `CompanyProvider` interface: `RegistryCompanyProvider` (recherche-entreprises.api.gouv.fr:
+      official filters, pagination, throttle, 429 + `Retry-After`), CSV import (aliases, 500 rows,
+      1 MB, per-row errors), `FakeCompanyProvider` (Faker, `example.com` domains)
+- [x] Domain confirmation: a candidate domain is `confirmed` only when the SIREN appears on the
+      home page or a legal notice page (challenge 1); the proof URL is stored and shown
+- [x] Contacts: `HunterClient` (domain search, company → domain, email verifier; `X-API-KEY`
+      header, 30-day cache in `provider_calls`, monthly credit limit, 202/429 retries), registry
+      officers (first names, last name, role only), `FakeContactFinder` / `FakeEmailVerifier`
+- [x] Rules in code: webmail blocklist, generic-address flag, only `valid` is sendable, address
+      must be on the confirmed domain, email SHA-256 hash for dedup, dedup by SIREN then domain
+- [x] Prospect state machine with an audited transition table (`prospect_transitions`)
+- [x] PostgreSQL job queue + worker loop: idempotency keys, `FOR UPDATE SKIP LOCKED`,
+      exponential backoff, `dead` after max attempts, budget pause without counting an attempt,
+      stale jobs requeued after a crash
+- [x] Screen 3: launch from the segments page, campaign list, campaign page (counts, live
+      progress, filters by state/segment, prospects table, CSV import), prospect page (proof,
+      contact, verification, history)
+- [x] Docker image fix: the backend package is rebuilt on every image build (stale-code bug)
+- Agents 3 and 4 are deterministic code, no LLM call (decision in `docs/DECISIONS.md`)
+- Still deferred: running Agents 1–2 in the worker instead of the HTTP request (moves to
+  Phase 3, when the writing agents need the worker anyway)
+- Known limitation for Phase 4: a company can be a prospect in several campaigns (one
+  prospect per campaign); before scheduling an email, Phase 4 must check that no other
+  campaign contacted that company or address recently (with the suppression list)
 
 Decisions taken with the developer on 2026-10-01 (before starting Phase 2):
 - **No Hunter account for now.** `HunterProvider` is still built and tested offline (respx), but
@@ -252,7 +270,8 @@ Decisions taken with the developer on 2026-10-01 (before starting Phase 2):
 - **Sendable addresses**: verification status `valid` only (`accept_all`, `unknown`,
   `invalid`, `webmail`, `disposable` are never sent to).
 - **Generic addresses** (`contact@`, `info@`…): sendable when `valid`, flagged, and a named
-  decision maker is always preferred when one exists.
+  decision maker *with an address* is always preferred when one exists (an officer without
+  an address cannot be emailed, so a reachable generic address wins over them).
 - **Sole traders** (*entreprises individuelles*) are included: still B2B when the address is
   professional and the message is about their activity (webmail addresses stay excluded).
 - **Volume**: at most 10 companies per segment launch by default (configurable, capped).

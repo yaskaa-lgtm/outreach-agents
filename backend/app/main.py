@@ -17,6 +17,7 @@ from fastapi.responses import JSONResponse
 from app import __version__
 from app.api.auth import router as auth_router
 from app.api.budget import router as budget_router
+from app.api.campaigns import router as campaigns_router
 from app.api.health import router as health_router
 from app.api.offers import router as offers_router
 from app.api.segments import router as segments_router
@@ -90,6 +91,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(offers_router)
     app.include_router(segments_router)
     app.include_router(budget_router)
+    app.include_router(campaigns_router)
     return app
 
 

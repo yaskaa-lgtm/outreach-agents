@@ -3,8 +3,8 @@
 AI agents that research B2B prospects and draft **sourced, compliant** cold emails — with a
 human approving every email before it leaves.
 
-> **Status: work in progress — Phases 0 (foundations) and 1 (offer analysis and segments) done.**
-> Nothing is prospected or sent yet. This README only describes what works today; the full
+> **Status: work in progress — Phases 0 (foundations), 1 (offer analysis and segments) and
+> 2 (company and contact discovery) done.** No email is written or sent yet. This README only describes what works today; the full
 > roadmap is in [docs/PLAN.md](docs/PLAN.md).
 
 ## What works today
@@ -16,16 +16,22 @@ human approving every email before it leaves.
 - **Screen 2 — "Who needs it?"**: a second agent proposes 3 to 6 customer segments with
   search criteria checked against official French lists (NAF codes, headcount ranges,
   départements), the decision makers to contact, a fit score and its justification.
+- **Screen 3 — Campaigns**: launch a search on the selected segments. A background worker
+  finds companies in the official French registry (or a CSV you import), confirms each
+  company's website by finding its SIREN on the legal notice page, picks a decision maker and
+  checks the address. Only a `valid` address on the confirmed domain is marked sendable;
+  personal webmail addresses are excluded. Every step is visible per prospect, with its proof.
 - **Cost control**: every LLM call is journaled with its cost in euros; a daily budget
   warns at 80 % and pauses LLM work at 100 %.
 - **Security**: login with a single admin account, SSRF-safe web reading, prompt-injection
   defences (web content is data, never instructions), strict Content-Security-Policy,
   rate limiting, secret scanning before every commit and on the whole Git history in CI.
 - **Demo mode (default)**: no API key needed. A deterministic fake LLM analyses a fictional
-  company (`nimbus-ledger.example.com`). Log in with `demo@example.com` / `demo-password`
+  company (`nimbus-ledger.example.com`), and discovery uses fictional companies and contacts
+  (Faker, `example.com` sites with their own legal notice pages). Log in with `demo@example.com` / `demo-password`
   (fake, public credentials that only work in demo mode).
 - `docker compose up` starts everything: PostgreSQL (migrated automatically), the FastAPI
-  API, a worker (idle until Phase 2), the Next.js web app and Mailpit.
+  API, the background worker (PostgreSQL job queue), the Next.js web app and Mailpit.
 
 ## Quick start
 
@@ -85,7 +91,9 @@ Docker Compose · GitHub Actions · gitleaks · pre-commit.
 
 To use the real LLM: set `DEMO_MODE=false`, `ANTHROPIC_API_KEY`, `ADMIN_EMAIL` and
 `ADMIN_PASSWORD` in `.env` (see `.env.example`), keep `DRY_RUN=true`, and set a spend limit in
-the Anthropic Console as well.
+the Anthropic Console as well. Real company search needs no key (official registry); without
+a `HUNTER_API_KEY`, contacts are the registry's company officers without an email address,
+so nothing becomes sendable.
 
 ## Documentation
 

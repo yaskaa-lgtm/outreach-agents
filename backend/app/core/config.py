@@ -10,7 +10,7 @@ from enum import StrEnum
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field, SecretStr
+from pydantic import Field, SecretStr, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -100,14 +100,27 @@ class Settings(BaseSettings):
     fetch_min_interval_per_host_seconds: float = Field(default=1.0, ge=0)
     offer_analysis_max_pages: int = Field(default=6, gt=0, le=20)
 
-    # --- Data providers (used from Phase 2) ---------------------------------
+    # --- Discovery: companies and contacts (Phase 2) -------------------------
     hunter_api_key: SecretStr | None = None
+    # Hunter's free plan has 50 credits a month; calls stop when this many were used.
+    hunter_monthly_credit_limit: int = Field(default=50, ge=0)
+    companies_per_segment: int = Field(default=10, gt=0)
+    companies_per_segment_max: int = Field(default=50, gt=0)
+    # recherche-entreprises.api.gouv.fr allows at most 7 requests/second per IP.
+    registry_min_interval_seconds: float = Field(default=0.25, ge=0)
+    # Pages read to find the SIREN on a company website (home + legal notice pages).
+    domain_check_max_pages: int = Field(default=3, gt=0, le=10)
 
     # --- Encryption at rest (used from Phase 4: SMTP/IMAP credentials) -------
     fernet_key: SecretStr | None = None
 
     # --- Worker ---------------------------------------------------------------
     worker_poll_interval_seconds: float = Field(default=5.0, gt=0)
+
+    @field_validator("hunter_api_key", mode="before")
+    @classmethod
+    def _empty_key_means_no_hunter(cls, value: object) -> object:
+        return None if value == "" else value
 
     @property
     def mode(self) -> RunMode:

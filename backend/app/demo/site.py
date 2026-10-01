@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from typing import Self
+from urllib.parse import urlsplit
 
 from app.core.errors import FetchError
+from app.providers.company.fake import DEMO_DOMAIN_PATTERN
 from app.providers.web.fetcher import FetchedPage
 
 DEMO_WEBSITE_URL = "https://nimbus-ledger.example.com/"
@@ -40,6 +42,27 @@ DEMO_PAGES: dict[str, str] = {
 }
 
 
+def _fake_company_page(url: str) -> FetchedPage | None:
+    """Websites of the fictional prospects (`<name>-<siren>.example.com`, see
+    app.providers.company.fake): a home page and a legal notice page showing the SIREN —
+    except for one company in ten, whose legal notice omits it (domain stays unconfirmed)."""
+    parts = urlsplit(url)
+    match = DEMO_DOMAIN_PATTERN.match(parts.hostname or "")
+    if match is None:
+        return None
+    siren = match.group(1)
+    home = f"https://{parts.hostname}/"
+    legal = f"{home}mentions-legales"
+    if parts.path in ("", "/"):
+        text = "Bienvenue sur le site de notre entreprise (site fictif de démonstration)."
+        return FetchedPage(requested_url=url, url=home, text=text, links=[legal])
+    if parts.path.rstrip("/") == "/mentions-legales":
+        shown = "" if int(siren) % 10 == 3 else f"SIREN : {siren[:3]} {siren[3:6]} {siren[6:]}. "
+        text = f"Mentions légales. Société fictive de démonstration. {shown}Hébergeur : exemple."
+        return FetchedPage(requested_url=url, url=legal, text=text, links=[home])
+    return None
+
+
 class DemoWebFetcher:
     """Serves the fictional pages above; any other URL is refused."""
 
@@ -50,7 +73,10 @@ class DemoWebFetcher:
         return None
 
     async def fetch_page(self, url: str) -> FetchedPage:
+        fake_company = _fake_company_page(url)
+        if fake_company is not None:
+            return fake_company
         text = DEMO_PAGES.get(url) or DEMO_PAGES.get(url.rstrip("/") + "/")
         if text is None:
-            raise FetchError("Demo mode: only the fictional demo website can be read.", url=url)
+            raise FetchError("Demo mode: only the fictional demo websites can be read.", url=url)
         return FetchedPage(requested_url=url, url=url, text=text, links=list(DEMO_PAGES))

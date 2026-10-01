@@ -15,6 +15,10 @@ export type Segment = components["schemas"]["SegmentRead"];
 export type BudgetStatus = components["schemas"]["BudgetStatus"];
 export type User = components["schemas"]["UserRead"];
 export type RunMode = components["schemas"]["RunMode"];
+export type Campaign = components["schemas"]["CampaignRead"];
+export type ProspectRow = components["schemas"]["ProspectRow"];
+export type ProspectDetail = components["schemas"]["ProspectDetail"];
+export type CsvImportResult = components["schemas"]["CsvImportResult"];
 
 /**
  * API client for server components and server actions. The session cookie of the

@@ -1,7 +1,6 @@
 """Background worker entry point: `uv run python -m app.worker`.
 
-Phase 0 stub: it checks the database connection and idles. The PostgreSQL job queue
-(`SELECT ... FOR UPDATE SKIP LOCKED`) arrives in Phase 2.
+Runs the PostgreSQL job queue (app.worker.queue) until stopped.
 """
 
 from __future__ import annotations
@@ -13,8 +12,9 @@ import signal
 import sys
 
 from app.core.config import get_settings
-from app.core.database import create_engine, ping_database
+from app.core.database import create_engine, create_sessionmaker, ping_database
 from app.core.logging import configure_logging
+from app.worker.runner import run_loop
 
 logger = logging.getLogger("app.worker")
 
@@ -25,13 +25,11 @@ async def run_worker(stop: asyncio.Event) -> None:
     try:
         database_ok = await ping_database(engine)
         logger.info(
-            "Worker started in %s mode (database: %s). No job kinds registered yet.",
+            "Worker started in %s mode (database: %s).",
             settings.mode,
             "ok" if database_ok else "unavailable",
         )
-        while not stop.is_set():
-            with contextlib.suppress(TimeoutError):
-                await asyncio.wait_for(stop.wait(), timeout=settings.worker_poll_interval_seconds)
+        await run_loop(settings, create_sessionmaker(engine), stop)
     finally:
         await engine.dispose()
         logger.info("Worker stopped")

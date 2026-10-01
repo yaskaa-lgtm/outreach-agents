@@ -2,6 +2,42 @@
 
 What I learned at each phase, in my own words. One section per phase.
 
+## Phase 2 — Discovery: companies, contacts, job queue (2026-10-01)
+
+**What was built**
+- A job queue inside PostgreSQL and a worker that runs it: launching a campaign queues one
+  search per segment, each company found queues its own processing job.
+- Company sources behind one interface: the official French registry, a CSV import, and a
+  fake provider for demo mode and tests.
+- Domain confirmation by SIREN, contact selection, address verification and a prospect state
+  machine where every change is recorded with its reason.
+- Screen 3: launch, live progress, filters, prospect detail with the proof.
+
+**Concepts**
+- *Job queue with `SKIP LOCKED`* — each worker takes the first job nobody holds and skips the
+  locked ones instead of waiting. Like cashiers taking the next customer in line: two
+  cashiers never serve the same customer, and nobody waits for a busy cashier.
+- *Idempotency* — running the same job twice gives the same result as once (unique keys, state
+  checks). Like pressing a lift button twice: it does not call two lifts.
+- *Exponential backoff* — after each failure, wait twice as long before retrying (plus a bit of
+  randomness), then give up (`dead`). Like calling back someone who does not answer.
+- *Proof before trust* — a domain is accepted only when the company's SIREN is on its site,
+  an address only when it is on that domain and verified. Each rule lives in code, not in a
+  prompt.
+
+**Surprises and fixes**
+- The Docker image shipped stale code: uv reuses a cached build of a local package until its
+  `pyproject.toml` changes. Found because the worker logged an old message.
+- `faker` was a test dependency but demo mode needs it at runtime: the API crashed in Docker
+  while every local test passed. Lesson: always try the real stack, not only the tests.
+- In the demo, an officer with the right title but no address was chosen over a reachable
+  `contact@` address: the ranking now puts "has an address" first.
+
+**What I should be able to explain in an interview**
+- Why the discovery agents use no LLM (rules are cheaper, reproducible and testable).
+- How the queue survives crashes, retries and the LLM budget pause.
+- Which checks an address must pass before it can ever be sent to, and why.
+
 ## Phase 1 — Data model, LLM layer, offer analysis and segments (2026-09-30)
 
 **What was built**

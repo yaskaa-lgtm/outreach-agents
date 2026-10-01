@@ -1,0 +1,43 @@
+# Consumer (personal) email providers. Addresses on these domains are personal addresses:
+# B2B prospecting without prior consent is only allowed on professional addresses
+# (CNIL rules quoted in docs/PROJECT_BRIEF.fr.md; docs/COMPLIANCE.md comes in Phase 7),
+# so they are never contacted.
+# One domain per line. Lines starting with # are ignored.
+aliceadsl.fr
+aol.com
+aol.fr
+bbox.fr
+cegetel.net
+club-internet.fr
+free.fr
+gmail.com
+gmx.com
+gmx.fr
+googlemail.com
+hotmail.com
+hotmail.fr
+icloud.com
+laposte.net
+live.com
+live.fr
+mac.com
+mail.com
+me.com
+msn.com
+neuf.fr
+numericable.fr
+orange.fr
+outlook.com
+outlook.fr
+proton.me
+protonmail.com
+sfr.fr
+tutanota.com
+wanadoo.fr
+yahoo.com
+yahoo.fr
+yandex.com
+ymail.com
+# Reserved test domain (RFC 2606: `.example` can never be a real mailbox), used by demo
+# mode and the tests to show the exclusion without any possibly real address.
+webmail.example
