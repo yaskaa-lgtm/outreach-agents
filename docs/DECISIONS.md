@@ -39,6 +39,9 @@ Bigger architectural choices get a full ADR in [`adr/`](adr/).
 | 2026-09-30 | `charset-normalizer` and `mypy` installed from source (pure Python) via `[tool.uv] no-binary-package` | Keep the compiled wheels | Its compiled extensions are unsigned and blocked by Windows Smart App Control (decision 13 of PLAN.md); same code, slightly slower. |
 | 2026-09-30 | CSP with a per-request nonce for scripts; `style-src 'unsafe-inline'` kept | Nonce for styles too | UI components set inline `style` attributes, which nonces cannot cover; scripts (the XSS risk) stay nonce-only. |
 | 2026-09-30 | `eager_defaults` on every model | Refresh objects after commit | Values computed by PostgreSQL (timestamps) come back with `RETURNING`: no lazy load in async code. |
+| 2026-10-01 | Confirmed by the developer: keep `psycopg` (LGPL, used unmodified as a library) | Switch to `asyncpg` (Apache-2.0) | Allowed by the LGPL, already documented and tested; no migration cost. |
+| 2026-10-01 | Confirmed by the developer: refusal fallbacks stay disabled | Enable the `fallbacks` beta | Predictable costs within the daily budget; a refusal is a clear error. |
+| 2026-10-01 | Confirmed by the developer: web interface in English; agent-written texts in French | French or bilingual UI | Consistent with the repository and its audience; the prospects' language is handled by the agents. |
 
 ## Dependencies and licences
 
