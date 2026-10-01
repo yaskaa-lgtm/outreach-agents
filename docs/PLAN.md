@@ -241,6 +241,22 @@ LLM models (verified 2026-09-30 on
 - PostgreSQL job queue + worker loop (idempotent, retries with exponential backoff, dead-letter)
 - Screen 3 (campaign: prospect list, filters, detail)
 
+Decisions taken with the developer on 2026-10-01 (before starting Phase 2):
+- **No Hunter account for now.** `HunterProvider` is still built and tested offline (respx), but
+  in real mode the contacts come from the official registry's *dirigeants* without a verified
+  email: they stay non-sendable until Hunter (or another verifier) is configured. The full
+  journey works end to end in demo mode only.
+- **Domains**: a candidate domain (from Hunter when available, or from the user's CSV) is
+  `confirmed` only when the company's SIREN appears on the site's legal notice page; otherwise
+  `unconfirmed`, never used for sending.
+- **Sendable addresses**: verification status `valid` only (`accept_all`, `unknown`,
+  `invalid`, `webmail`, `disposable` are never sent to).
+- **Generic addresses** (`contact@`, `info@`…): sendable when `valid`, flagged, and a named
+  decision maker is always preferred when one exists.
+- **Sole traders** (*entreprises individuelles*) are included: still B2B when the address is
+  professional and the message is about their activity (webmail addresses stay excluded).
+- **Volume**: at most 10 companies per segment launch by default (configurable, capped).
+
 ### Phase 3 — Personalisation & writing: Agents 5–7
 - Agent 5: facts with exact excerpt check, "nothing relevant found" path
 - Agent 6: sequence writer (50–120 words, plain text, one CTA, cites fact IDs); legal footer added by code
